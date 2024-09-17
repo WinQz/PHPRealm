@@ -1,3 +1,6 @@
+<img src="https://github.com/user-attachments/assets/9f07d724-c3cd-4808-9b50-29792a1cb758" alt="Image description" width="300" height="300">
+
+
 # PHPRealm
 
 ### Welcome to **PHPRealm** – an Open-Source MMORPG built with **PHP** and **CodeIgniter 4**!
