@@ -44,6 +44,8 @@ We’re working hard to bring the best features to PHPRealm! Below is a breakdow
 
 - [ ] **User Registration & Character Management**
 - [ ] **Basic 2D Map with Player Movement**
+- [ ] **Advanced Mob System**
+- [ ] **The Best 2D Boss Battles**
 - [ ] **Real-Time Combat System**
 - [ ] **Multiplayer Interactions (WebSockets)**
 - [ ] **Basic Chat System**
@@ -69,7 +71,7 @@ To run **PHPRealm** locally with **CodeIgniter 4**, follow these steps:
 
 1. **Clone the Repository:**
     ```bash
-    git clone https://github.com/YourUsername/PHPRealm.git
+    git clone https://github.com/WinQz/PHP-MMORPG.git
     ```
 
 2. **Set Up Your Environment:**
@@ -84,7 +86,7 @@ To run **PHPRealm** locally with **CodeIgniter 4**, follow these steps:
 
 4. **Configure Database:**
    - Set up a MySQL database and import the SQL file from the `/database` folder.
-   - Edit the configuration file `.env` or `app/Config/Database.php` with your database credentials.
+   - Edit the configuration file `.env` with your database credentials.
 
 5. **Start the CodeIgniter Development Server:**
     ```bash
