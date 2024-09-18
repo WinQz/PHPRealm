@@ -10,7 +10,7 @@ class UserStatusUpdater {
     }
 
     public function updateUserStatus($userId, $status) {
-        $stmt = $this->pdo->prepare("UPDATE users SET status = :status WHERE id = :id");
+        $stmt = $this->pdo->prepare("UPDATE users SET status = :status, last_login = NOW() WHERE id = :id");
         $stmt->execute([':status' => $status, ':id' => $userId]);
     }
 }

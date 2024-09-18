@@ -10,6 +10,7 @@ class UserSessionManager {
 
     public function __construct(UserStatusUpdater $statusUpdater) {
         $this->statusUpdater = $statusUpdater;
+        $this->log('UserSessionManager Initialized.');
     }
 
     public function setUserSession($userId, $conn) {
@@ -35,5 +36,9 @@ class UserSessionManager {
             $this->userSessions[$userId]->close();
             $this->removeUserSession($userId);
         }
+    }
+
+    private function log(string $message) {
+        echo $message . "\n";
     }
 }

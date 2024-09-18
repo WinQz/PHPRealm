@@ -13,7 +13,7 @@ class GameServer implements MessageComponentInterface {
     public function __construct(UserSessionManager $sessionManager) {
         $this->clients = new \SplObjectStorage;
         $this->sessionManager = $sessionManager;
-        $this->log("GameServer initialized. Waiting for connections...");
+        $this->log("GameServer Initialized. \nWaiting for connections...");
     }
 
     public function onOpen(ConnectionInterface $conn) {
