@@ -1,15 +1,6 @@
 <?php $this->extend('base') ?>
 
 <?php $this->section('content') ?>
-    <!-- Hero Section -->
-    <header class="bg-dark text-light py-5 text-center" style="background-image: url('https://via.placeholder.com/1920x600'); background-size: cover;">
-        <div class="container">
-            <h1 class="display-4">Welcome to PHPRealm</h1>
-            <p class="lead">An Open-Source MMORPG built with PHP and CodeIgniter 4!</p>
-            <a href="/auth/login" class="btn btn-primary btn-lg m-2">Login</a>
-            <a href="/auth/register" class="btn btn-secondary btn-lg m-2">Register</a>
-        </div>
-    </header>
 
     <!-- News Section -->
     <section class="container my-5">
