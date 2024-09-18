@@ -49,7 +49,7 @@ class GameServer implements MessageComponentInterface {
     
         if ($existingSession && $existingSession !== $conn) {
             $existingUsername = $existingSession->userData['username'] ?? 'Unknown';
-            $this->sessionManager->removeUserSession($userId);
+            $this->sessionManager->disconnectPreviousSession($userId, $conn);
             
             $this->log("User {$existingUsername} had a duplicate session. Previous session has been removed.");
             
@@ -80,7 +80,7 @@ class GameServer implements MessageComponentInterface {
         foreach ($this->sessionManager->getAllSessions() as $userId => $client) {
             if ($client === $conn) {
                 $username = $client->userData['username'] ?? 'Unknown';
-                $this->sessionManager->removeUserSession($userId);
+                $this->sessionManager->disconnectPreviousSession($userId, $conn);
                 $this->log("{$username} has left the adventure");
 
                 $this->broadcastMessage([
