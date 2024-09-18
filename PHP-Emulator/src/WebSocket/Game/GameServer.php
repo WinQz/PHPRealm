@@ -75,14 +75,14 @@ class GameServer implements MessageComponentInterface {
             'data' => $users
         ]);
     }
-
+    
     private function handleDisconnection(ConnectionInterface $conn) {
         foreach ($this->sessionManager->getAllSessions() as $userId => $client) {
             if ($client === $conn) {
                 $username = $client->userData['username'] ?? 'Unknown';
-                $this->sessionManager->disconnectPreviousSession($userId, $conn);
+                $this->sessionManager->removeUserSession($userId);
                 $this->log("{$username} has left the adventure");
-
+    
                 $this->broadcastMessage([
                     'type' => 'userDisconnect',
                     'userId' => $userId
