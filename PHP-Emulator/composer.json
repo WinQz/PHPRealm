@@ -3,7 +3,9 @@
     "description": "The Emulator for the open source MMORPG game called phprealm",
     "type": "project",
     "require": {
-        "cboden/ratchet": "^0.4.4"
+        "cboden/ratchet": "^0.4.4",
+        "vlucas/phpdotenv": "^5.6",
+        "react/child-process": "^0.6.5"
     },
     "autoload": {
         "psr-4": {

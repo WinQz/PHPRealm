@@ -1,24 +1,35 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require 'vendor/autoload.php';
 
-use Ratchet\Server\IoServer;
+use App\Database\DatabaseConnection;
+use App\Database\User\UserStatusUpdater;
+use App\WebSocket\User\UserSessionManager;
+use App\WebSocket\Game\GameServer;
+use React\EventLoop\Factory;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
-use App\WebSocket\Game\GameServer;
-use App\WebSocket\User\UserSessionManager;
+use Ratchet\Server\IoServer;
+use React\Socket\Server as ReactServer;
 
-$sessionManager = new UserSessionManager();
+$loop = Factory::create();
+
+$dbConnection = new DatabaseConnection();
+$statusUpdater = new UserStatusUpdater($dbConnection->getConnection());
+
+$sessionManager = new UserSessionManager($statusUpdater);
+
 $gameServer = new GameServer($sessionManager);
 
-$server = IoServer::factory(
+$reactServer = new ReactServer('0.0.0.0:8080', $loop);
+
+$server = new IoServer(
     new HttpServer(
-        new WsServer(
-            $gameServer
-        )
+        new WsServer($gameServer)
     ),
-    8080
+    $reactServer,
+    $loop
 );
 
-echo "WebSocket server started on port 8080\n";
+echo "Server running on port 8080\n";
 $server->run();

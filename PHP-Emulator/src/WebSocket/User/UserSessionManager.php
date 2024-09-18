@@ -2,15 +2,24 @@
 
 namespace App\WebSocket\User;
 
+use App\Database\User\UserStatusUpdater;
+
 class UserSessionManager {
     protected $userSessions = [];
+    private $statusUpdater;
+
+    public function __construct(UserStatusUpdater $statusUpdater) {
+        $this->statusUpdater = $statusUpdater;
+    }
 
     public function setUserSession($userId, $conn) {
         $this->userSessions[$userId] = $conn;
+        $this->statusUpdater->updateUserStatus($userId, 'online');
     }
 
     public function removeUserSession($userId) {
         unset($this->userSessions[$userId]);
+        $this->statusUpdater->updateUserStatus($userId, 'offline');
     }
 
     public function getUserSession($userId) {

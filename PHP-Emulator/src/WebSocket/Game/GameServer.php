@@ -44,7 +44,6 @@ class GameServer implements MessageComponentInterface {
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn);
 
-        // This somehow gives sometimes error when user leaves have to check later then
         foreach ($this->sessionManager->getAllSessions() as $userId => $client) {
             if ($client === $conn) {
                 $username = $client->userData['username'] ?? 'Unknown';
