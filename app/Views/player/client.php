@@ -16,11 +16,14 @@
     ws.onmessage = function(event) {
         console.log('Received message:', event.data);
         
-        // Assuming the message data is in JSON format
         const message = JSON.parse(event.data);
 
         if (message.type === 'userUpdate') {
+            console.log('User update data:', message.data);
             updateUsersList(message.data);
+        } else if (message.type === 'userDisconnect') {
+            console.log(`User disconnected: ${message.userId}`);
+            removeUserFromList(message.userId);
         }
     };
 
@@ -45,15 +48,23 @@
     }
 
     function updateUsersList(users) {
-
-        const usersArray = Object.values(users);
-
         usersList.innerHTML = '';
 
-        usersArray.forEach(user => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `${user.username} (${user.status})`;
-            usersList.appendChild(listItem);
-        });
+        for (const userId in users) {
+            const user = users[userId];
+            if (user) {
+                const listItem = document.createElement('li');
+                listItem.id = `user-${userId}`;
+                listItem.textContent = `${user.username} (${user.status})`;
+                usersList.appendChild(listItem);
+            }
+        }
+    }
+
+    function removeUserFromList(userId) {
+        const userItem = document.getElementById(`user-${userId}`);
+        if (userItem) {
+            userItem.remove();
+        }
     }
 </script>

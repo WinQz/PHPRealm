@@ -44,18 +44,36 @@ class GameServer implements MessageComponentInterface {
     private function handleUserData(ConnectionInterface $conn, array $userData) {
         $userId = $userData['id'];
         $username = $userData['username'];
-
+        
         $existingSession = $this->sessionManager->getUserSession($userId);
+    
         if ($existingSession && $existingSession !== $conn) {
-            $this->log("User {$username} already has an active session. Closing previous session.");
-            $this->sessionManager->disconnectPreviousSession($userId, $conn);
+            $existingUsername = $existingSession->userData['username'] ?? 'Unknown';
+            $this->sessionManager->removeUserSession($userId);
+            
+            $this->log("User {$existingUsername} had a duplicate session. Previous session has been removed.");
+            
+            $this->broadcastMessage([
+                'type' => 'userDuplicateSession',
+                'userId' => $userId,
+                'removedSessionId' => $existingSession->resourceId
+            ]);
         }
-
+    
         $conn->userData = $userData;
         $this->sessionManager->setUserSession($userId, $conn);
-
+        
         $this->log("{$username} has joined the adventure");
-        $this->broadcastUserList();
+    
+        $users = [];
+        foreach ($this->sessionManager->getAllSessions() as $session) {
+            $users[$session->userData['id']] = $session->userData;
+        }
+    
+        $this->broadcastMessage([
+            'type' => 'userUpdate',
+            'data' => $users
+        ]);
     }
 
     private function handleDisconnection(ConnectionInterface $conn) {
@@ -64,6 +82,11 @@ class GameServer implements MessageComponentInterface {
                 $username = $client->userData['username'] ?? 'Unknown';
                 $this->sessionManager->removeUserSession($userId);
                 $this->log("{$username} has left the adventure");
+
+                $this->broadcastMessage([
+                    'type' => 'userDisconnect',
+                    'userId' => $userId
+                ]);
                 break;
             }
         }
@@ -73,20 +96,14 @@ class GameServer implements MessageComponentInterface {
         return count($this->clients);
     }
 
-    private function broadcastUserList() {
-        $userList = array_map(function ($client) {
-            return $client->userData;
-        }, $this->sessionManager->getAllSessions());
-
-        foreach ($this->clients as $client) {
-            $client->send(json_encode([
-                'type' => 'userUpdate',
-                'data' => $userList
-            ]));
-        }
-    }
-
     private function log(string $message) {
         echo $message . "\n";
+    }
+
+    private function broadcastMessage(array $message) {
+        $messageJson = json_encode($message);
+        foreach ($this->clients as $client) {
+            $client->send($messageJson);
+        }
     }
 }
