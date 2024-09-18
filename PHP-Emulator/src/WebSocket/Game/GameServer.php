@@ -44,12 +44,18 @@ class GameServer implements MessageComponentInterface {
     private function handleUserData(ConnectionInterface $conn, array $userData) {
         $userId = $userData['id'];
         $username = $userData['username'];
-        
+
+        $existingSession = $this->sessionManager->getUserSession($userId);
+        if ($existingSession && $existingSession !== $conn) {
+            $this->log("User {$username} already has an active session. Closing previous session.");
+            $this->sessionManager->disconnectPreviousSession($userId, $conn);
+        }
+
         $conn->userData = $userData;
-        $this->sessionManager->disconnectPreviousSession($userId, $conn);
         $this->sessionManager->setUserSession($userId, $conn);
-        
+
         $this->log("{$username} has joined the adventure");
+        $this->broadcastUserList();
     }
 
     private function handleDisconnection(ConnectionInterface $conn) {
@@ -65,6 +71,19 @@ class GameServer implements MessageComponentInterface {
 
     private function getClientCount(): int {
         return count($this->clients);
+    }
+
+    private function broadcastUserList() {
+        $userList = array_map(function ($client) {
+            return $client->userData;
+        }, $this->sessionManager->getAllSessions());
+
+        foreach ($this->clients as $client) {
+            $client->send(json_encode([
+                'type' => 'userUpdate',
+                'data' => $userList
+            ]));
+        }
     }
 
     private function log(string $message) {
