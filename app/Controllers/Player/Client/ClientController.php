@@ -21,26 +21,13 @@ class ClientController extends BaseController
     }
 
     public function getUserData() {
-        
+
         if ($this->session->has('user')) {
             $userId = $this->session->get('user')->id;
-            
-            $userData = $this->userModel->find($userId);
 
-            if ($userData) {
-                $userData = (object) $userData;
-
-                unset(
-                    $userData->mail, 
-                    $userData->password, 
-                    $userData->account_created
-                );
-
-                return $this->response->setJSON($userData);
-            } else {
-                return $this->response->setJSON(['error' => 'User not found']);
-            }
+            return $this->response->setJSON(['id' => $userId]);
         } else {
+            
             return $this->response->setJSON(['error' => 'User not logged in']);
         }
     }

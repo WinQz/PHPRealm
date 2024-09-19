@@ -5,14 +5,17 @@ namespace App\WebSocket\Game;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use App\WebSocket\User\UserSessionManager;
+use App\Database\User\Get\GetUserData;
 
 class GameServer implements MessageComponentInterface {
     protected $clients;
     protected $sessionManager;
+    private $userDataFetcher;
 
-    public function __construct(UserSessionManager $sessionManager) {
+    public function __construct(UserSessionManager $sessionManager, GetUserData $userDataFetcher) {
         $this->clients = new \SplObjectStorage;
         $this->sessionManager = $sessionManager;
+        $this->userDataFetcher = $userDataFetcher;
         $this->log("GameServer Initialized. \nWaiting for connections...");
     }
 
@@ -23,9 +26,11 @@ class GameServer implements MessageComponentInterface {
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
+        
         $data = json_decode($msg, true);
-        if (isset($data['userData'])) {
-            $this->handleUserData($from, $data['userData']);
+    
+        if (isset($data['userId'])) {
+            $this->handleUserData($from, $data['userId']);
         }
     }
 
@@ -41,27 +46,33 @@ class GameServer implements MessageComponentInterface {
         $conn->close();
     }
 
-    private function handleUserData(ConnectionInterface $conn, array $userData) {
-        $userId = $userData['id'];
+    private function handleUserData(ConnectionInterface $conn, $id) {
+        $userData = $this->userDataFetcher->getUserById($id);
+
+        if (!$userData) {
+            $this->log("ID {$id} not found.");
+            return;
+        }
+        
         $username = $userData['username'];
         
-        $existingSession = $this->sessionManager->getUserSession($userId);
-    
+        $existingSession = $this->sessionManager->getUserSession($id);
+        
         if ($existingSession && $existingSession !== $conn) {
             $existingUsername = $existingSession->userData['username'] ?? 'Unknown';
-            $this->sessionManager->disconnectPreviousSession($userId, $conn);
+            $this->sessionManager->disconnectPreviousSession($id, $conn);
             
             $this->log("User {$existingUsername} had a duplicate session. Previous session has been removed.");
             
             $this->broadcastMessage([
                 'type' => 'userDuplicateSession',
-                'userId' => $userId,
+                'id' => $id,
                 'removedSessionId' => $existingSession->resourceId
             ]);
         }
-    
+        
         $conn->userData = $userData;
-        $this->sessionManager->setUserSession($userId, $conn);
+        $this->sessionManager->setUserSession($id, $conn);
         
         $this->log("{$username} has joined the adventure");
     
@@ -77,15 +88,15 @@ class GameServer implements MessageComponentInterface {
     }
     
     private function handleDisconnection(ConnectionInterface $conn) {
-        foreach ($this->sessionManager->getAllSessions() as $userId => $client) {
+        foreach ($this->sessionManager->getAllSessions() as $id => $client) {
             if ($client === $conn) {
                 $username = $client->userData['username'] ?? 'Unknown';
-                $this->sessionManager->removeUserSession($userId);
+                $this->sessionManager->removeUserSession($id);
                 $this->log("{$username} has left the adventure");
-    
+
                 $this->broadcastMessage([
                     'type' => 'userDisconnect',
-                    'userId' => $userId
+                    'id' => $id
                 ]);
                 break;
             }
