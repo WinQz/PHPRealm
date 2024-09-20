@@ -43,6 +43,6 @@ $server = new IoServer(
     $loop
 );
 
-echo "Server running on port 8080\n";
+echo "Server running on port 8080";
 
 $server->run();

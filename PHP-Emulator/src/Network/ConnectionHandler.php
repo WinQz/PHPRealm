@@ -13,6 +13,7 @@ class ConnectionHandler {
     public function __construct(UserSessionManager $sessionManager, SplObjectStorage $clients) {
         $this->sessionManager = $sessionManager;
         $this->clients = $clients;
+        echo "Connection Handler Initialized.\n";
     }
 
     public function onOpen(ConnectionInterface $conn) {

@@ -10,6 +10,7 @@ class UserSessionManager {
 
     public function __construct(UserStatusUpdater $statusUpdater) {
         $this->statusUpdater = $statusUpdater;
+        echo "User Session Manager Initialized.\n";
     }
 
     public function setUserSession($userId, $conn) {

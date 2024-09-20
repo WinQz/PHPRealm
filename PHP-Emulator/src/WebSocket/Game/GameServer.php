@@ -15,7 +15,7 @@ class GameServer implements MessageComponentInterface {
     public function __construct(ConnectionHandler $connectionHandler, MessageDispatcher $messageDispatcher) {
         $this->connectionHandler = $connectionHandler;
         $this->messageDispatcher = $messageDispatcher;
-        Logger::log("GameServer Initialized. \nWaiting for connections...");
+        Logger::log("GameServer Initialized. Waiting for connections...\n");
     }
 
     public function onOpen(ConnectionInterface $conn) {
