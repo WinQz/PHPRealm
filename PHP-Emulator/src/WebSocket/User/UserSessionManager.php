@@ -13,13 +13,18 @@ class UserSessionManager {
     }
 
     public function setUserSession($userId, $conn) {
+        
+        $existingSession = $this->getUserSession($userId);
+        if ($existingSession && $existingSession !== $conn) {
+            $this->disconnectPreviousSession($userId, $conn);
+        }
+        
         $this->userSessions[$userId] = $conn;
         $this->statusUpdater->updateUserStatus($userId, 'online');
     }
 
     public function removeUserSession($userId) {
         if (isset($this->userSessions[$userId])) {
-            $conn = $this->userSessions[$userId];
             unset($this->userSessions[$userId]);
             $this->statusUpdater->updateUserStatus($userId, 'offline');
         }

@@ -69,7 +69,7 @@
     <ul id="users"></ul>
 
     <script>
-        const ws = new WebSocket('ws://localhost:8080');
+    const ws = new WebSocket('ws://localhost:8080');
 
     const statusElement = document.getElementById('status');
     const usersList = document.getElementById('users');
@@ -81,20 +81,27 @@
     ws.onopen = function() {
         console.log('Connected to WebSocket server');
         statusElement.textContent = 'Connected to WebSocket server';
-        fetchUserData();
+        fetchUserData().then(() => {
+            handleConnection();
+        });
     };
 
     ws.onmessage = function(event) {
         console.log('Received message:', event.data);
-        
-        const message = JSON.parse(event.data);
 
-        if (message.type === 'userUpdate') {
-            console.log('User update data:', message.data);
-            updateUsersList(message.data);
-        } else if (message.type === 'userDisconnect') {
-            console.log(`User disconnected: ${message.userId}`);
-            removeUserFromList(message.userId);
+        try {
+            const message = JSON.parse(event.data);
+            console.log('Parsed message:', message);
+
+            if (message.type === 'userUpdate') {
+                console.log('User update data:', message.data);
+                updateUsersList(message.data);
+            } else if (message.type === 'userDisconnect') {
+                console.log(`User disconnected: ${message.id}`);
+                removeUserFromList(message.id);
+            }
+        } catch (e) {
+            console.error('Failed to parse message:', e);
         }
     };
 
@@ -111,8 +118,9 @@
                     console.error('Error fetching user data:', data.error);
                 } else {
                     console.log('User data fetched:', data);
-                    
                     userId = data.id;
+                    console.log(`Sending userId: ${userId}`);
+                    
                     ws.send(JSON.stringify({ type: 'userData', userId: userId }));
                 }
             })
@@ -122,19 +130,19 @@
     function updateUsersList(users) {
         usersList.innerHTML = '';
 
-        for (const userId in users) {
-            const user = users[userId];
+        for (const id in users) {
+            const user = users[id];
             if (user) {
                 const listItem = document.createElement('li');
-                listItem.id = `user-${userId}`;
+                listItem.id = `user-${id}`;
                 listItem.textContent = `${user.username} (${user.status})`;
                 usersList.appendChild(listItem);
             }
         }
     }
 
-    function removeUserFromList(userId) {
-        const userItem = document.getElementById(`user-${userId}`);
+    function removeUserFromList(id) {
+        const userItem = document.getElementById(`user-${id}`);
         if (userItem) {
             userItem.remove();
         }
@@ -145,11 +153,9 @@
         connectedMessage.style.display = 'block';
     }
 
-    ws.onopen = function() {
-        fetchUserData().then(() => {
-            handleConnection();
-        });
-    };
-    </script>
+    fetchUserData().then(() => {
+        handleConnection();
+    });
+</script>
 </body>
 </html>
