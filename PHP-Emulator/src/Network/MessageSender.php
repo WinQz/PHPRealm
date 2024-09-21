@@ -5,11 +5,10 @@ namespace App\Network;
 use SplObjectStorage;
 
 class MessageSender {
-    
+
     private $sensitiveKeys = ['password', 'email', 'account_created'];
 
     public function broadcastMessage(SplObjectStorage $clients, array $message) {
-        
         $filteredMessage = $this->filterSensitiveData($message);
 
         foreach ($clients as $client) {
@@ -24,5 +23,15 @@ class MessageSender {
             }
         }
         return $message;
+    }
+
+    // Refactored method to broadcast player positions with parameters
+    public function broadcastPlayerPositions(SplObjectStorage $clients, array $playerPositions) {
+        $message = [
+            'type' => 'updatePlayerPosition',
+            'data' => $playerPositions
+        ];
+        
+        $this->broadcastMessage($clients, $message);
     }
 }

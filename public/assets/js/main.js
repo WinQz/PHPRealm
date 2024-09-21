@@ -20,6 +20,8 @@ const game = new Phaser.Game(config);
 
 let players = {};
 let userId;
+let lastUpdateTime = 0;
+const updateInterval = 100;
 const statusElement = document.getElementById('status');
 const usersList = document.getElementById('users');
 const loadingContainer = document.getElementById('loadingContainer');
@@ -27,35 +29,74 @@ const connectedMessage = document.getElementById('connectedMessage');
 const errorMessage = document.getElementById('errorMessage');
 
 const ws = new WebSocket('ws://localhost:8080');
+let messageQueue = [];
 
 function preload() {}
 
 function create() {
-    userId = generateUserId();
-    players[userId] = createPlayerTriangle(400, 300, 0x1abc9c);
-    this.cursors = this.input.keyboard.createCursorKeys();
-    setupWebSocket();
+    fetchUserData().then(() => {
+        if (!userId) {
+            console.error('User ID is not set. Cannot create player.');
+            return;
+        }
+
+        players[userId] = createPlayerTriangle(400, 300, 0x1abc9c);
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        setupWebSocket();
+    });
 }
 
 function update() {
+    if (!userId || !players[userId]) {
+        return;
+    }
+
+    let moved = false;
+
     if (this.cursors.left.isDown) {
         players[userId].setVelocityX(-160);
-        sendPlayerUpdate();
+        moved = true;
     } else if (this.cursors.right.isDown) {
         players[userId].setVelocityX(160);
-        sendPlayerUpdate();
+        moved = true;
     } else {
         players[userId].setVelocityX(0);
     }
 
     if (this.cursors.up.isDown) {
         players[userId].setVelocityY(-160);
-        sendPlayerUpdate();
+        moved = true;
     } else if (this.cursors.down.isDown) {
         players[userId].setVelocityY(160);
-        sendPlayerUpdate();
+        moved = true;
     } else {
         players[userId].setVelocityY(0);
+    }
+
+    const currentTime = Date.now();
+    if (moved && currentTime - lastUpdateTime >= updateInterval) {
+        sendPlayerUpdate();
+        lastUpdateTime = currentTime;
+    }
+}
+
+function sendPlayerUpdate() {
+    const playerData = {
+        type: 'playerUpdate',
+        data: {
+            id: userId,
+            x: players[userId].x,
+            y: players[userId].y
+        }
+    };
+
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(playerData));
+    } else {
+        console.warn('WebSocket is not open. Queuing message.');
+        messageQueue.push(playerData);
     }
 }
 
@@ -70,51 +111,53 @@ function setupWebSocket() {
     ws.onopen = function() {
         console.log('Connected to WebSocket server');
         statusElement.textContent = 'Connected to WebSocket server';
-        fetchUserData().then(() => {
-            handleConnection();
-        });
-    };
+        handleConnection();
 
-    ws.onmessage = function(event) {
-        console.log('Received message:', event.data);
-
-        try {
-            const message = JSON.parse(event.data);
-            console.log('Parsed message:', message);
-
-            if (message.type === 'playerUpdate') {
-                updatePlayerPositions(message.data);
-            } else if (message.type === 'userUpdate') {
-                console.log('User update data:', message.data);
-                updateUsersList(message.data);
-            } else if (message.type === 'userDisconnect') {
-                console.log(`User disconnected: ${message.id}`);
-                removeUserFromList(message.id);
-            }
-        } catch (e) {
-            console.error('Failed to parse message:', e);
+        while (messageQueue.length > 0) {
+            const message = messageQueue.shift();
+            ws.send(JSON.stringify(message));
         }
-    };
 
-    ws.onerror = function(error) {
-        console.log('WebSocket error:', error);
-        statusElement.textContent = 'WebSocket error: ' + error.message;
-        displayError();
+        ws.send(JSON.stringify({ type: 'userJoin', userId: userId }));
     };
 
     ws.onclose = function() {
+        console.log('WebSocket connection closed. Attempting to reconnect...');
         displayError();
+        setTimeout(setupWebSocket, 2000);
     };
 }
 
-function sendPlayerUpdate() {
-    const playerData = {
-        id: userId,
-        x: players[userId].x,
-        y: players[userId].y
-    };
-    ws.send(JSON.stringify({ type: 'playerUpdate', data: playerData }));
-}
+ws.onmessage = function(event) {
+    console.log('Received message:', event.data);
+
+    try {
+        const message = JSON.parse(event.data);
+        console.log('Parsed message:', message);
+
+        if (message.type === 'updatePlayerPosition') {
+            updatePlayerPositions(message.data);
+        } else if (message.type === 'userUpdate') {
+            updateUsersList(message.data);
+        } else if (message.type === 'userDisconnect') {
+            removeUserFromList(message.id);
+        } else if (message.type === 'userJoined') {
+            const newUserData = message.data;
+            if (!players[newUserData.id]) {
+                players[newUserData.id] = createPlayerTriangle(newUserData.x, newUserData.y, 0xe74c3c);
+                updateUsersList(message.data.users);
+            }
+        }
+    } catch (e) {
+        console.error('Failed to parse message:', e);
+    }
+};
+
+ws.onerror = function(error) {
+    console.log('WebSocket error:', error);
+    statusElement.textContent = 'WebSocket error: ' + error.message;
+    displayError();
+};
 
 function updatePlayerPositions(playersData) {
     for (const id in playersData) {
@@ -167,10 +210,6 @@ function removeUserFromList(id) {
     if (userItem) {
         userItem.remove();
     }
-}
-
-function generateUserId() {
-    return Math.floor(Math.random() * 10000).toString();
 }
 
 function handleConnection() {

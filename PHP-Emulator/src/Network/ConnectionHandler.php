@@ -5,6 +5,7 @@ namespace App\Network;
 use Ratchet\ConnectionInterface;
 use SplObjectStorage;
 use App\WebSocket\User\UserSessionManager;
+use App\Network\MessageSender;
 
 class ConnectionHandler {
     protected $clients;
@@ -13,6 +14,7 @@ class ConnectionHandler {
     public function __construct(UserSessionManager $sessionManager, SplObjectStorage $clients) {
         $this->sessionManager = $sessionManager;
         $this->clients = $clients;
+        $this->messageSender = new MessageSender();
         echo "Connection Handler Initialized.\n";
     }
 
@@ -40,7 +42,7 @@ class ConnectionHandler {
                 $this->sessionManager->removeUserSession($id);
                 Logger::log("{$username} has left the adventure");
 
-                MessageSender::broadcastMessage($this->clients, [
+                $this->messageSender->broadcastMessage($this->clients, [
                     'type' => 'userDisconnect',
                     'id' => $id
                 ]);

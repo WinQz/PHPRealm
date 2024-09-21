@@ -6,7 +6,6 @@ use Ratchet\ConnectionInterface;
 use App\Database\User\Get\GetUserData;
 use SplObjectStorage;
 use App\WebSocket\User\UserSessionManager;
-use App\Network\MessageSender;
 
 class MessageDispatcher {
     private $userDataFetcher;
@@ -24,8 +23,14 @@ class MessageDispatcher {
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true);
         
+        var_dump($msg);
+    
         if (isset($data['userId'])) {
             $this->handleUserData($from, $data['userId']);
+        }
+    
+        if ($data['type'] === 'playerUpdate' && isset($data['data'])) {
+            $this->handlePlayerUpdate($from, $data['data']);
         }
     }
 
@@ -55,18 +60,51 @@ class MessageDispatcher {
     
         $conn->userData = $userData;
         $this->sessionManager->setUserSession($id, $conn);
-    
+        
         Logger::log("{$username} has joined the adventure");
     
-        $users = [];
-        foreach ($this->sessionManager->getAllSessions() as $session) {
-            $userDataFiltered = $this->messageSender->filterSensitiveData($session->userData);
-            $users[$session->userData['id']] = $userDataFiltered;
+        $playersData = [];
+        foreach ($this->sessionManager->getAllSessions() as $sessionUserId => $sessionConn) {
+            $userDataFiltered = $this->messageSender->filterSensitiveData($sessionConn->userData);
+            $playersData[$sessionUserId] = $userDataFiltered;
+        }
+    
+        $conn->send(json_encode([
+            'type' => 'userUpdate',
+            'data' => $playersData
+        ]));
+    
+        $this->messageSender->broadcastMessage($this->clients, [
+            'type' => 'userJoined',
+            'data' => $this->messageSender->filterSensitiveData($userData)
+        ]);
+    }
+
+    private function handlePlayerUpdate(ConnectionInterface $conn, $playerData) {
+        $userId = $playerData['id'];
+    
+        $session = $this->sessionManager->getUserSession($userId);
+        if (!$session || $session !== $conn) {
+            Logger::log("No valid session for user ID: {$userId}.");
+            return;
+        }
+    
+        $this->sessionManager->setUserData($userId, [
+            'x' => $playerData['x'],
+            'y' => $playerData['y']
+        ]);
+    
+        Logger::log("Updated position for user ID {$userId} to ({$playerData['x']}, {$playerData['y']}).");
+    
+        $playerPositions = [];
+        foreach ($this->sessionManager->getAllSessions() as $sessionUserId => $sessionConn) {
+            $userData = $this->sessionManager->getUserData($sessionUserId);
+            $playerPositions[$sessionUserId] = $userData;
         }
     
         $this->messageSender->broadcastMessage($this->clients, [
-            'type' => 'userUpdate',
-            'data' => $users
+            'type' => 'updatePlayerPosition',
+            'data' => $playerPositions
         ]);
     }
 }

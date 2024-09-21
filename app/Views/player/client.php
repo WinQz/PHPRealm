@@ -75,8 +75,7 @@
     <div id="status"></div>
     <ul id="users"></ul>
 
-    <!-- Include the main JS module file -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
-    <script type="text/javascript" src="/assets/js/main.js?v=10"></script>
+    <script type="text/javascript" src="/assets/js/main.js?v=19"></script>
 </body>
 </html>
