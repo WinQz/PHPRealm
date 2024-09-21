@@ -53,6 +53,12 @@
             color: #1abc9c;
             margin-top: 20px;
         }
+        .error-message {
+            display: none;
+            font-size: 1.5rem;
+            color: #e74c3c;
+            margin-top: 20px;
+        }
         #status {
             margin-top: 20px;
         }
@@ -63,99 +69,14 @@
         <div class="loading-text">PHPRealm</div>
         <div class="spinner"></div>
         <div class="connected-message" id="connectedMessage">Connected to Server</div>
+        <div class="error-message" id="errorMessage">Error Connecting to Server</div>
     </div>
 
     <div id="status"></div>
     <ul id="users"></ul>
 
-    <script>
-    const ws = new WebSocket('ws://localhost:8080');
-
-    const statusElement = document.getElementById('status');
-    const usersList = document.getElementById('users');
-    const loadingContainer = document.getElementById('loadingContainer');
-    const connectedMessage = document.getElementById('connectedMessage');
-
-    let userId = null;
-
-    ws.onopen = function() {
-        console.log('Connected to WebSocket server');
-        statusElement.textContent = 'Connected to WebSocket server';
-        fetchUserData().then(() => {
-            handleConnection();
-        });
-    };
-
-    ws.onmessage = function(event) {
-        console.log('Received message:', event.data);
-
-        try {
-            const message = JSON.parse(event.data);
-            console.log('Parsed message:', message);
-
-            if (message.type === 'userUpdate') {
-                console.log('User update data:', message.data);
-                updateUsersList(message.data);
-            } else if (message.type === 'userDisconnect') {
-                console.log(`User disconnected: ${message.id}`);
-                removeUserFromList(message.id);
-            }
-        } catch (e) {
-            console.error('Failed to parse message:', e);
-        }
-    };
-
-    ws.onerror = function(error) {
-        console.log('WebSocket error:', error);
-        statusElement.textContent = 'WebSocket error: ' + error.message;
-    };
-
-    function fetchUserData() {
-        return fetch('/api/client/player/getUserData')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error fetching user data:', data.error);
-                } else {
-                    console.log('User data fetched:', data);
-                    userId = data.id;
-                    console.log(`Sending userId: ${userId}`);
-                    
-                    ws.send(JSON.stringify({ type: 'userData', userId: userId }));
-                }
-            })
-            .catch(error => console.error('Fetch error:', error));
-    }
-
-    function updateUsersList(users) {
-        usersList.innerHTML = '';
-
-        for (const id in users) {
-            const user = users[id];
-            if (user) {
-                const listItem = document.createElement('li');
-                listItem.id = `user-${id}`;
-                listItem.textContent = `${user.username} (${user.status})`;
-                usersList.appendChild(listItem);
-            }
-        }
-    }
-
-    function removeUserFromList(id) {
-        const userItem = document.getElementById(`user-${id}`);
-        if (userItem) {
-            userItem.remove();
-        }
-    }
-
-    function handleConnection() {
-        loadingContainer.classList.add('hidden');
-        connectedMessage.style.display = 'block';
-    }
-
-    fetchUserData().then(() => {
-        handleConnection();
-    });
-</script>
+    <!-- Include the main JS module file -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script type="text/javascript" src="/assets/js/main.js?v=10"></script>
 </body>
 </html>
