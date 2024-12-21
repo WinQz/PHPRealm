@@ -16,7 +16,10 @@ class GetUserData {
         $stmt->execute([':id' => $userId]);
         
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
-        
+
+        if (!$user){ 
+            return;
+        }        
         return $user;
     }
 }

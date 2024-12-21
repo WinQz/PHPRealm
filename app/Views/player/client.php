@@ -10,7 +10,6 @@
             font-family: Arial, sans-serif;
             background-color: #2c3e50;
             color: #ecf0f1;
-            text-align: center;
             overflow: hidden;
         }
         .loading-container {
@@ -59,9 +58,6 @@
             color: #e74c3c;
             margin-top: 20px;
         }
-        #status {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -72,10 +68,10 @@
         <div class="error-message" id="errorMessage">Error Connecting to Server</div>
     </div>
 
-    <div id="status"></div>
+    <div id="status">Not connected</div>
     <ul id="users"></ul>
 
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
-    <script type="text/javascript" src="/assets/js/main.js?v=19"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="text/javascript" src="/assets/js/main.js?v=33"></script>
 </body>
 </html>

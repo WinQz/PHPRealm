@@ -27,7 +27,6 @@ class ClientController extends BaseController
 
             return $this->response->setJSON(['id' => $userId]);
         } else {
-            
             return $this->response->setJSON(['error' => 'User not logged in']);
         }
     }
