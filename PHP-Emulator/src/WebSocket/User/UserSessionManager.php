@@ -30,7 +30,6 @@ class UserSessionManager {
             ];
         }
 
-        // Ensure the connection has the user data with coordinates
         $conn->userData = $this->userData[$userId];
 
         $this->statusUpdater->updateUserStatus($userId, 'online');

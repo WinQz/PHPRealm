@@ -13,7 +13,7 @@ class MessageDispatcher {
     private $clients;
     private $messageSender;
     private $lastBroadcastTime = 0;
-    private $broadcastInterval = 50; // Reduce the interval to send updates more frequently
+    private $broadcastInterval = 50;
 
     public function __construct(GetUserData $userDataFetcher, UserSessionManager $sessionManager, SplObjectStorage $clients) {
         $this->userDataFetcher = $userDataFetcher;
@@ -148,7 +148,7 @@ class MessageDispatcher {
     }
 
     private function broadcastPlayerPositions() {
-        $now = microtime(true) * 1000; // Current time in milliseconds
+        $now = microtime(true) * 1000;
         if ($now - $this->lastBroadcastTime >= $this->broadcastInterval) {
             $playerPositions = [];
 

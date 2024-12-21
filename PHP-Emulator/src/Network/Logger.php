@@ -2,8 +2,26 @@
 
 namespace App\Network;
 
+use Monolog\Logger as MonologLogger;
+use Monolog\Handler\StreamHandler;
+
 class Logger {
-    public static function log(string $message) {
-        echo $message . "\n";
+    private $logger;
+
+    public function __construct() {
+        $this->logger = new MonologLogger('app');
+        $this->logger->pushHandler(new StreamHandler('php://stdout', MonologLogger::DEBUG));
+    }
+
+    public function log(string $message) {
+        $this->logger->info($message);
+    }
+
+    public function error(string $message) {
+        $this->logger->error($message);
+    }
+
+    public function getLogger(): MonologLogger {
+        return $this->logger;
     }
 }

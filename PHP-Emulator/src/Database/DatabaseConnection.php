@@ -4,42 +4,34 @@ namespace App\Database;
 
 use PDO;
 use PDOException;
+use Psr\Log\LoggerInterface;
 
 class DatabaseConnection {
     private $pdo;
+    private $logger;
 
-    public function __construct() {
-        $env = $this->loadEnv('.env');
+    public function __construct(array $config, LoggerInterface $logger) {
+        $this->logger = $logger;
 
-        $server = $env['SERVER'] ?? 'mysql';
-        $host = $env['HOST'] ?? 'localhost';
-        $dbname = $env['DBNAME'] ?? 'phprealm';
-        $username = $env['DB_USER'] ?? 'username';
-        $password = $env['DB_PASSWORD'] ?? 'password';
+        $server = $config['server'];
+        $host = $config['host'];
+        $dbname = $config['dbname'];
+        $username = $config['username'];
+        $password = $config['password'];
 
-        $dsn = sprintf('%s:host=%s;dbname=%s', $server, $host, $dbname);
+        $dsn = sprintf('%s:host=%s;dbname=%s;charset=utf8mb4', $server, $host, $dbname);
 
         try {
-            $this->pdo = new PDO($dsn, $username, $password);
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo = new PDO($dsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+            $this->logger->info('Database connection established.');
         } catch (PDOException $e) {
-            echo 'Connection failed: ' . $e->getMessage();
-            exit;
+            $this->logger->error('Connection failed: ' . $e->getMessage());
+            throw new \RuntimeException('Database connection failed');
         }
-    }
-
-    private function loadEnv($file) {
-        $env = [];
-        if (file_exists($file)) {
-            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            foreach ($lines as $line) {
-                if (strpos($line, '=') !== false) {
-                    list($key, $value) = explode('=', $line, 2);
-                    $env[trim($key)] = trim($value);
-                }
-            }
-        }
-        return $env;
     }
 
     public function getConnection() {

@@ -5,7 +5,8 @@
     "require": {
         "cboden/ratchet": "^0.4.4",
         "vlucas/phpdotenv": "^5.6",
-        "react/child-process": "^0.6.5"
+        "react/child-process": "^0.6.5",
+        "monolog/monolog": "^3.8"
     },
     "autoload": {
         "psr-4": {
