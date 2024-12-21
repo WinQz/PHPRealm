@@ -61,7 +61,7 @@ function updatePlayerPosition() {
 }
 
 let lastPositionUpdate = 0;
-const UPDATE_INTERVAL = 50;
+const UPDATE_INTERVAL = 50; // Reduce the interval to send updates more frequently
 
 function sendPositionUpdate() {
     const now = Date.now();
@@ -182,7 +182,7 @@ let userId;
 let players = {};
 let messageQueue = [];
 let lastUpdateTime = 0;
-const updateInterval = 100;
+const updateInterval = 10;
 
 const statusElement = document.getElementById('status');
 const usersList = document.getElementById('users');

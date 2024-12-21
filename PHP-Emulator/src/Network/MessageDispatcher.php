@@ -12,6 +12,8 @@ class MessageDispatcher {
     private $sessionManager;
     private $clients;
     private $messageSender;
+    private $lastBroadcastTime = 0;
+    private $broadcastInterval = 50; // Reduce the interval to send updates more frequently
 
     public function __construct(GetUserData $userDataFetcher, UserSessionManager $sessionManager, SplObjectStorage $clients) {
         $this->userDataFetcher = $userDataFetcher;
@@ -23,40 +25,47 @@ class MessageDispatcher {
     public function onMessage(ConnectionInterface $from, $msg) {
         $data = json_decode($msg, true);
 
-        var_dump($data);
-
         if (!$data) {
             Logger::log("Invalid JSON message received: {$msg}");
             return;
         }
 
         if (isset($data['type'])) {
-            switch ($data['type']) {
-                case 'userJoin':
-                    if (isset($data['userId'])) {
-                        $this->handleUserData($from, $data['userId']);
-                    } else {
-                        Logger::log("userJoin message missing userId: {$msg}");
-                    }
-                    break;
-                case 'playerUpdate':
-                    $this->handlePlayerUpdate($from, $data['data']);
-                    break;
-            }
+            $this->handleMessageType($from, $data);
         }
     }
 
-    private function handleUserData(ConnectionInterface $conn, int $id) {
-        $userData = $this->userDataFetcher->getUserById($id);
+    private function handleMessageType(ConnectionInterface $from, array $data) {
+        switch ($data['type']) {
+            case 'userJoin':
+                $this->handleUserJoin($from, $data);
+                break;
+            case 'playerUpdate':
+                $this->handlePlayerUpdate($from, $data['data']);
+                break;
+            default:
+                Logger::log("Unknown message type: {$data['type']}");
+                break;
+        }
+    }
 
-        if (!$userData) {
-            Logger::log("User ID {$id} not found.");
+    private function handleUserJoin(ConnectionInterface $conn, array $data) {
+        if (!isset($data['userId'])) {
+            Logger::log("userJoin message missing userId: " . json_encode($data));
             return;
         }
 
-        $this->manageUserSession($conn, $id, $userData);
+        $userId = $data['userId'];
+        $userData = $this->userDataFetcher->getUserById($userId);
 
-        $this->sessionManager->setUserData($id, [
+        if (!$userData) {
+            Logger::log("User ID {$userId} not found.");
+            return;
+        }
+
+        $this->manageUserSession($conn, $userId, $userData);
+
+        $this->sessionManager->setUserData($userId, [
             'x' => $userData['x'] ?? 0,
             'y' => $userData['y'] ?? 0
         ]);
@@ -67,6 +76,27 @@ class MessageDispatcher {
             'type' => 'userJoined',
             'data' => $this->messageSender->filterSensitiveData($userData)
         ]);
+    }
+
+    private function handlePlayerUpdate(ConnectionInterface $conn, array $playerData) {
+        $userId = $playerData['id'] ?? null;
+
+        if (!$userId || !$this->validateSession($conn, $userId)) {
+            Logger::log("Invalid session or missing user ID for player update.");
+            return;
+        }
+
+        if (!isset($playerData['x']) || !isset($playerData['y'])) {
+            Logger::log("Missing coordinates in player update.");
+            return;
+        }
+
+        $this->updatePlayerPosition($userId, [
+            'x' => (float)$playerData['x'],
+            'y' => (float)$playerData['y']
+        ]);
+
+        $this->broadcastPlayerPositions();
     }
 
     private function manageUserSession(ConnectionInterface $conn, int $id, array $userData) {
@@ -105,27 +135,6 @@ class MessageDispatcher {
         ]));
     }
 
-    private function handlePlayerUpdate(ConnectionInterface $conn, array $playerData) {
-        $userId = $playerData['id'] ?? null;
-
-        if (!$userId || !$this->validateSession($conn, $userId)) {
-            Logger::log("Invalid session or missing user ID for player update.");
-            return;
-        }
-
-        if (!isset($playerData['x']) || !isset($playerData['y'])) {
-            Logger::log("Missing coordinates in player update.");
-            return;
-        }
-
-        $this->updatePlayerPosition($userId, [
-            'x' => (float)$playerData['x'],
-            'y' => (float)$playerData['y']
-        ]);
-
-        $this->broadcastPlayerPositions();
-    }
-
     private function validateSession(ConnectionInterface $conn, int $userId): bool {
         $session = $this->sessionManager->getUserSession($userId);
         return $session && $session === $conn;
@@ -139,16 +148,35 @@ class MessageDispatcher {
     }
 
     private function broadcastPlayerPositions() {
-        $playerPositions = [];
+        $now = microtime(true) * 1000; // Current time in milliseconds
+        if ($now - $this->lastBroadcastTime >= $this->broadcastInterval) {
+            $playerPositions = [];
 
-        foreach ($this->sessionManager->getAllSessions() as $sessionUserId => $sessionConn) {
-            $userData = $this->sessionManager->getUserData($sessionUserId);
-            $playerPositions[$sessionUserId] = $userData;
+            foreach ($this->sessionManager->getAllSessions() as $sessionUserId => $sessionConn) {
+                $userData = $this->sessionManager->getUserData($sessionUserId);
+                $playerPositions[$sessionUserId] = $userData;
+            }
+
+            $this->messageSender->broadcastPlayerPositions($this->clients, $playerPositions);
+
+            $this->lastBroadcastTime = $now;
         }
+    }
 
-        $this->messageSender->broadcastMessage($this->clients, [
-            'type' => 'updatePlayerPosition',
-            'data' => $playerPositions
-        ]);
+    public function handleDisconnection(ConnectionInterface $conn) {
+        foreach ($this->sessionManager->getAllSessions() as $id => $client) {
+            if ($client === $conn) {
+                $userData = $this->sessionManager->getUserData($id);
+                $username = $userData['username'] ?? 'Unknown';
+                $this->sessionManager->removeUserSession($id);
+                Logger::log("{$username} has left the adventure");
+
+                $this->messageSender->broadcastMessage($this->clients, [
+                    'type' => 'userDisconnect',
+                    'id' => $id
+                ]);
+                break;
+            }
+        }
     }
 }

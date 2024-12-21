@@ -28,6 +28,7 @@ class GameServer implements MessageComponentInterface {
 
     public function onClose(ConnectionInterface $conn) {
         $this->connectionHandler->onClose($conn);
+        $this->messageDispatcher->handleDisconnection($conn);
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
