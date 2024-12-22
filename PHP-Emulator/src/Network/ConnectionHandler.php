@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Network;
+namespace Emulator\Network;
 
 use Ratchet\ConnectionInterface;
 use SplObjectStorage;
-use App\WebSocket\User\UserSessionManager;
-use App\Network\MessageSender;
+use Emulator\WebSocket\User\UserSessionManager;
+use Emulator\Network\MessageSender;
 
 class ConnectionHandler {
     protected $clients;

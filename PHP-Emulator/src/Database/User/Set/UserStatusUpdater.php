@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Database\User\Set;
+namespace Emulator\Database\User\Set;
 
 class UserStatusUpdater {
     private $pdo;

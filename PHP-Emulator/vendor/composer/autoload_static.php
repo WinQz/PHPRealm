@@ -56,6 +56,7 @@ class ComposerStaticInitce559b9fbd0e097bccee77e6c3cc8be1
         'E' => 
         array (
             'Evenement\\' => 10,
+            'Emulator\\' => 9,
         ),
         'D' => 
         array (
@@ -64,7 +65,6 @@ class ComposerStaticInitce559b9fbd0e097bccee77e6c3cc8be1
         'A' => 
         array (
             'App\\Tests\\' => 10,
-            'App\\' => 4,
         ),
     );
 
@@ -158,6 +158,10 @@ class ComposerStaticInitce559b9fbd0e097bccee77e6c3cc8be1
         array (
             0 => __DIR__ . '/..' . '/evenement/evenement/src',
         ),
+        'Emulator\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src',
+        ),
         'Dotenv\\' => 
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
@@ -166,22 +170,9 @@ class ComposerStaticInitce559b9fbd0e097bccee77e6c3cc8be1
         array (
             0 => __DIR__ . '/../..' . '/tests',
         ),
-        'App\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/src',
-        ),
     );
 
     public static $classMap = array (
-        'App\\Database\\DatabaseConnection' => __DIR__ . '/../..' . '/src/Database/DatabaseConnection.php',
-        'App\\Database\\User\\Get\\GetUserData' => __DIR__ . '/../..' . '/src/Database/User/Get/GetUserData.php',
-        'App\\Database\\User\\Set\\UserStatusUpdater' => __DIR__ . '/../..' . '/src/Database/User/Set/UserStatusUpdater.php',
-        'App\\Network\\ConnectionHandler' => __DIR__ . '/../..' . '/src/Network/ConnectionHandler.php',
-        'App\\Network\\Logger' => __DIR__ . '/../..' . '/src/Network/Logger.php',
-        'App\\Network\\MessageDispatcher' => __DIR__ . '/../..' . '/src/Network/MessageDispatcher.php',
-        'App\\Network\\MessageSender' => __DIR__ . '/../..' . '/src/Network/MessageSender.php',
-        'App\\WebSocket\\Game\\GameServer' => __DIR__ . '/../..' . '/src/WebSocket/Game/GameServer.php',
-        'App\\WebSocket\\User\\UserSessionManager' => __DIR__ . '/../..' . '/src/WebSocket/User/UserSessionManager.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'DateError' => __DIR__ . '/..' . '/symfony/polyfill-php83/Resources/stubs/DateError.php',

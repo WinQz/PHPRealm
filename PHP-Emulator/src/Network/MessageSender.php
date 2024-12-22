@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Network;
+namespace Emulator\Network;
 
 use SplObjectStorage;
 
@@ -25,7 +25,6 @@ class MessageSender {
         return $message;
     }
 
-    // Refactored method to broadcast player positions with parameters
     public function broadcastPlayerPositions(SplObjectStorage $clients, array $playerPositions) {
         $message = [
             'type' => 'updatePlayerPosition',

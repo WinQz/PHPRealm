@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Database;
+namespace Emulator\Database;
 
 use PDO;
 use PDOException;

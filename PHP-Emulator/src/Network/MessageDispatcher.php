@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Network;
+namespace Emulator\Network;
 
 use Ratchet\ConnectionInterface;
-use App\Database\User\Get\GetUserData;
+use Emulator\Database\User\Get\GetUserData;
 use SplObjectStorage;
-use App\WebSocket\User\UserSessionManager;
+use Emulator\WebSocket\User\UserSessionManager;
 
 class MessageDispatcher {
     private $userDataFetcher;

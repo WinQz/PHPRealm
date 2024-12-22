@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Network;
+namespace Emulator\Network;
 
 use Monolog\Logger as MonologLogger;
 use Monolog\Handler\StreamHandler;
@@ -9,7 +9,7 @@ class Logger {
     private $logger;
 
     public function __construct() {
-        $this->logger = new MonologLogger('app');
+        $this->logger = new MonologLogger('PHP-Emulator');
         $this->logger->pushHandler(new StreamHandler('php://stdout', MonologLogger::DEBUG));
     }
 

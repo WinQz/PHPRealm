@@ -4,13 +4,17 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+const textureLoader = new THREE.TextureLoader();
+const playerTexture = textureLoader.load('/assets/textures/player.png');
+const houseTexture = textureLoader.load('/assets/textures/house.png');
+
 const playerGeometry = new THREE.BoxGeometry();
-const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+const playerMaterial = new THREE.MeshStandardMaterial({ map: playerTexture });
 const player = new THREE.Mesh(playerGeometry, playerMaterial);
 scene.add(player);
 
 const groundGeometry = new THREE.PlaneGeometry(100, 100);
-const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.5;
@@ -23,7 +27,37 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(5, 10, 7.5);
 scene.add(directionalLight);
 
+const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+scene.add(sky);
+
+function createHouse(x, z) {
+    const houseGeometry = new THREE.BoxGeometry(2, 2, 2);
+    const houseMaterial = new THREE.MeshStandardMaterial({ map: houseTexture });
+    const house = new THREE.Mesh(houseGeometry, houseMaterial);
+    house.position.set(x, 1, z);
+    scene.add(house);
+
+    const roofGeometry = new THREE.ConeGeometry(1.5, 1, 4);
+    const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.position.set(x, 2.5, z);
+    roof.rotation.y = Math.PI / 4;
+    scene.add(roof);
+}
+
+createHouse(10, 10);
+createHouse(-10, -10);
+createHouse(10, -10);
+createHouse(-10, 10);
+
 camera.position.set(player.position.x, player.position.y + 2, player.position.z + 5);
+
+let players = {};
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
 let moveForward = false;
 let moveBackward = false;
@@ -103,6 +137,7 @@ function animate() {
     requestAnimationFrame(animate);
 
     updatePlayerPosition();
+    checkIntersections();
 
     camera.position.copy(player.position).add(cameraOffset);
     camera.lookAt(player.position);
@@ -202,7 +237,6 @@ document.addEventListener('contextmenu', (event) => {
 
 const ws = new WebSocket('ws://localhost:8080');
 let userId;
-let players = {};
 let messageQueue = [];
 let lastUpdateTime = 0;
 const updateInterval = 10;
@@ -212,6 +246,8 @@ const usersList = document.getElementById('users');
 const loadingContainer = document.getElementById('loadingContainer');
 const connectedMessage = document.getElementById('connectedMessage');
 const errorMessage = document.getElementById('errorMessage');
+const disconnectOverlay = document.getElementById('disconnectOverlay');
+const disconnectMessage = document.querySelector('.disconnect-message');
 
 const healthFill = document.getElementById('healthFill');
 const manaFill = document.getElementById('manaFill');
@@ -248,8 +284,58 @@ updateHealth(75);
 updateMana(50);
 updateInventory(['Sword', 'Shield', 'Potion']);
 
+const progressFill = document.getElementById('progressFill');
+const errorContainer = document.getElementById('errorContainer');
+const retryButton = document.getElementById('retryButton');
+let loadingProgress = 0;
+
+function updateLoadingProgress(progress) {
+    loadingProgress = Math.min(progress, 100);
+    progressFill.style.width = `${loadingProgress}%`;
+}
+
+function startLoading() {
+    loadingProgress = 0;
+    updateLoadingProgress(0);
+    errorContainer.style.display = 'none';
+    loadingContainer.style.display = 'flex';
+    
+    const loadingInterval = setInterval(() => {
+        if (loadingProgress < 90) {
+            updateLoadingProgress(loadingProgress + 10);
+        }
+    }, 500);
+
+    return loadingInterval;
+}
+
+const loadingStatus = document.querySelector('.loading-status');
+
+function handleConnection() {
+    updateLoadingProgress(100);
+    loadingStatus.textContent = 'Loaded';
+    
+    setTimeout(() => {
+        loadingContainer.style.opacity = '0';
+        setTimeout(() => {
+            loadingContainer.style.display = 'none';
+        }, 300);
+    }, 3000);
+}
+
+function displayError() {
+    errorContainer.style.display = 'block';
+    updateLoadingProgress(100);
+}
+
+retryButton.addEventListener('click', () => {
+    location.reload();
+});
+
+const loadingInterval = startLoading();
+
 ws.onopen = function() {
-    statusElement.textContent = 'Connected to WebSocket server';
+    clearInterval(loadingInterval);
     handleConnection();
 
     fetchUserData().then(() => {
@@ -262,8 +348,10 @@ ws.onopen = function() {
     });
 };
 
-ws.onclose = function() {
+ws.onclose = function(event) {
+    clearInterval(loadingInterval);
     displayError();
+    showDisconnectOverlay(event.code);
     setTimeout(() => {
         setupWebSocket();
     }, 2000);
@@ -277,7 +365,7 @@ ws.onmessage = function(event) {
             Object.entries(message.data).forEach(([playerId, data]) => {
                 if (playerId !== userId) {
                     if (!players[playerId]) {
-                        players[playerId] = createPlayer(data.x, data.z, 0xe74c3c);
+                        players[playerId] = createPlayer(data.x, data.z, 0xe74c3c, data.username, data.health, data.mana);
                     } else {
                         players[playerId].position.set(data.x, data.z, data.y);
                         if (data.isJumping) {
@@ -288,15 +376,17 @@ ws.onmessage = function(event) {
             });
         } else if (message.type === 'userUpdate') {
             updateUsersList(message.data);
+            updatePlayerPositions(message.data);
         } else if (message.type === 'userDisconnect') {
             removeUserFromList(message.id);
+            removePlayer(message.id);
         } else if (message.type === 'userJoined') {
             const newUserData = message.data;
             const x = newUserData.x || 0;
             const y = newUserData.y || 0;
             const color = newUserData.id === userId ? 0x00ff00 : 0xe74c3c;
             if (!players[newUserData.id]) {
-                players[newUserData.id] = createPlayer(x, y, color);
+                players[newUserData.id] = createPlayer(x, y, color, newUserData.username, newUserData.health, newUserData.mana);
             }
             updateUsersList({ [newUserData.id]: newUserData });
         } else if (message.type === 'updateHealth') {
@@ -312,25 +402,67 @@ ws.onmessage = function(event) {
 };
 
 ws.onerror = function(error) {
-    statusElement.textContent = 'WebSocket error: ' + error.message;
+    clearInterval(loadingInterval);
     displayError();
+    statusElement.textContent = 'WebSocket error: ' + error.message;
 };
 
-function createPlayer(x, y, color) {
+function createPlayerLabel(username, health, mana) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = 256;
+    canvas.height = 128;
+
+    context.font = '32px Arial';
+    context.fillStyle = '#ffffff';
+    context.textAlign = 'center';
+    context.fillText(username, canvas.width / 2, 32);
+
+    context.fillStyle = '#e74c3c';
+    context.fillRect(28, 64, 200 * (health / 100), 20);
+
+    context.fillStyle = '#3498db';
+    context.fillRect(28, 96, 200 * (mana / 100), 20);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(4, 2, 1);
+    
+    return sprite;
+}
+
+function createPlayer(x, y, color, username, health = 100, mana = 100) {
     const geometry = new THREE.BoxGeometry();
-    const material = new THREE.MeshStandardMaterial({ color });
+    const material = new THREE.MeshStandardMaterial({ map: playerTexture });
     const player = new THREE.Mesh(geometry, material);
     player.position.set(x, y, 0);
+    
+    if (username) {
+        const label = createPlayerLabel(username, health, mana);
+        label.position.set(0, 1.5, 0);
+        player.add(label);
+    }
+    
+    const outlineMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
+    const outline = new THREE.Mesh(geometry, outlineMaterial);
+    outline.scale.multiplyScalar(1.05);
+    player.add(outline);
+    
     scene.add(player);
     return player;
 }
 
 function updatePlayerPositions(playersData) {
     for (const id in playersData) {
-        if (!players[id]) {
-            players[id] = createPlayer(playersData[id].x, playersData[id].y, 0xe74c3c);
+        if (id !== userId) { 
+            if (!players[id]) {
+                players[id] = createPlayer(playersData[id].x, playersData[id].y, 0xe74c3c, playersData[id].username, playersData[id].health, playersData[id].mana);
+            } else {
+                players[id].position.set(playersData[id].x, playersData[id].y, 0);
+            }
         }
-        players[id].position.set(playersData[id].x, playersData[id].y, 0);
     }
 }
 
@@ -349,6 +481,7 @@ function fetchUserData() {
                 console.error('Error fetching user data:', data.error);
             } else {
                 userId = data.id;
+                players[userId] = createPlayer(0, 0, 0x00ff00, data.username, data.health, data.mana);
             }
         })
         .catch(error => console.error('Fetch error:', error));
@@ -384,12 +517,32 @@ function removeUserFromList(id) {
     }
 }
 
-function handleConnection() {
-    loadingContainer.classList.add('hidden');
-    connectedMessage.style.display = 'block';
+function onMouseMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
-function displayError() {
-    loadingContainer.classList.remove('hidden');
-    errorMessage.style.display = 'block';
+function checkIntersections() {
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(Object.values(players));
+
+    Object.values(players).forEach(player => {
+        if (player.children[0]) {
+            player.children[0].visible = false;
+        }
+    });
+
+    if (intersects.length > 0) {
+        const intersectedPlayer = intersects[0].object;
+        if (intersectedPlayer.children[0]) {
+            intersectedPlayer.children[0].visible = true;
+        }
+    }
 }
+
+function showDisconnectOverlay(errorCode) {
+    disconnectOverlay.style.display = 'flex';
+    disconnectMessage.textContent = `Disconnected from server. Error code: ${errorCode}`;
+}
+
+document.addEventListener('mousemove', onMouseMove, false);

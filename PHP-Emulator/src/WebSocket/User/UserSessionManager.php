@@ -1,8 +1,8 @@
 <?php
 
-namespace App\WebSocket\User;
+namespace Emulator\WebSocket\User;
 
-use App\Database\User\Set\UserStatusUpdater;
+use Emulator\Database\User\Set\UserStatusUpdater;
 
 class UserSessionManager {
     protected $userSessions = [];

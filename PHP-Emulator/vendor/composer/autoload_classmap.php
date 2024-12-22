@@ -6,15 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'App\\Database\\DatabaseConnection' => $baseDir . '/src/Database/DatabaseConnection.php',
-    'App\\Database\\User\\Get\\GetUserData' => $baseDir . '/src/Database/User/Get/GetUserData.php',
-    'App\\Database\\User\\Set\\UserStatusUpdater' => $baseDir . '/src/Database/User/Set/UserStatusUpdater.php',
-    'App\\Network\\ConnectionHandler' => $baseDir . '/src/Network/ConnectionHandler.php',
-    'App\\Network\\Logger' => $baseDir . '/src/Network/Logger.php',
-    'App\\Network\\MessageDispatcher' => $baseDir . '/src/Network/MessageDispatcher.php',
-    'App\\Network\\MessageSender' => $baseDir . '/src/Network/MessageSender.php',
-    'App\\WebSocket\\Game\\GameServer' => $baseDir . '/src/WebSocket/Game/GameServer.php',
-    'App\\WebSocket\\User\\UserSessionManager' => $baseDir . '/src/WebSocket/User/UserSessionManager.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'DateError' => $vendorDir . '/symfony/polyfill-php83/Resources/stubs/DateError.php',

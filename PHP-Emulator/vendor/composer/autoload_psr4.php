@@ -28,7 +28,7 @@ return array(
     'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
     'GrahamCampbell\\ResultType\\' => array($vendorDir . '/graham-campbell/result-type/src'),
     'Evenement\\' => array($vendorDir . '/evenement/evenement/src'),
+    'Emulator\\' => array($baseDir . '/src'),
     'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'App\\Tests\\' => array($baseDir . '/tests'),
-    'App\\' => array($baseDir . '/src'),
 );

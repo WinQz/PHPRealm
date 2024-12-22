@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Database\User\Get;
+namespace Emulator\Database\User\Get;
 
 class GetUserData {
     private $pdo;

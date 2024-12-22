@@ -2,14 +2,14 @@
 
 require 'vendor/autoload.php';
 
-use App\Database\DatabaseConnection;
-use App\Database\User\Set\UserStatusUpdater;
-use App\Database\User\Get\GetUserData;
-use App\WebSocket\User\UserSessionManager;
-use App\WebSocket\Game\GameServer;
-use App\Network\ConnectionHandler;
-use App\Network\MessageDispatcher;
-use App\Network\Logger;
+use Emulator\Database\DatabaseConnection;
+use Emulator\Database\User\Set\UserStatusUpdater;
+use Emulator\Database\User\Get\GetUserData;
+use Emulator\WebSocket\User\UserSessionManager;
+use Emulator\WebSocket\Game\GameServer;
+use Emulator\Network\ConnectionHandler;
+use Emulator\Network\MessageDispatcher;
+use Emulator\Network\Logger;
 use Dotenv\Dotenv;
 
 use React\EventLoop\Factory;

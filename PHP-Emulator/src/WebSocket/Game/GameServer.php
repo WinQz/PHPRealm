@@ -1,12 +1,12 @@
 <?php
 
-namespace App\WebSocket\Game;
+namespace Emulator\WebSocket\Game;
 
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
-use App\Network\ConnectionHandler;
-use App\Network\MessageDispatcher;
-use App\Network\Logger;
+use Emulator\Network\ConnectionHandler;
+use Emulator\Network\MessageDispatcher;
+use Emulator\Network\Logger;
 
 class GameServer implements MessageComponentInterface {
     protected $connectionHandler;

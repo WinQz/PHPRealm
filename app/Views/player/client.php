@@ -18,21 +18,63 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(44, 62, 80, 0.9);
+            background: #2c3e50;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            transition: all 0.3s ease;
+            opacity: 1;
         }
-        .loading-container.hidden {
-            opacity: 0;
-            visibility: hidden;
+        .progress-bar {
+            width: 300px;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #1abc9c;
+            transition: width 0.3s ease;
+        }
+        .error-container {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(231, 76, 60, 0.2);
+            border-radius: 10px;
+            margin: 20px;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .retry-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .retry-button:hover {
+            background: #c0392b;
         }
         .loading-text {
             font-size: 2rem;
             margin-bottom: 20px;
+        }
+        .loading-status {
+            color: #ecf0f1;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            transition: opacity 0.3s ease;
         }
         .spinner {
             border: 8px solid rgba(44, 62, 80, 0.2);
@@ -50,12 +92,6 @@
             display: none;
             font-size: 1.5rem;
             color: #1abc9c;
-            margin-top: 20px;
-        }
-        .error-message {
-            display: none;
-            font-size: 1.5rem;
-            color: #e74c3c;
             margin-top: 20px;
         }
         .hud {
@@ -123,14 +159,63 @@
             cursor: pointer;
             z-index: 1000;
         }
+        .player-cube {
+            outline: 2px solid #1abc9c;
+        }
+        .player-label {
+            outline: 1px solid #ecf0f1;
+        }
+        .disconnect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(44, 62, 80, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .disconnect-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .disconnect-message {
+            color: #e74c3c;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .reconnect-button {
+            background: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .reconnect-button:hover {
+            background: #16a085;
+        }
     </style>
 </head>
 <body>
     <div class="loading-container" id="loadingContainer">
-        <div class="loading-text">PHPRealm</div>
-        <div class="spinner"></div>
+        <div class="loading-text">PHPRealm Client</div>
+        <div class="loading-status">Loading into world...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="error-container" id="errorContainer">
+            <div class="error-message" id="errorMessage">Connection failed</div>
+            <button class="retry-button" id="retryButton">Retry Connection</button>
+        </div>
         <div class="connected-message" id="connectedMessage">Connected to Server</div>
-        <div class="error-message" id="errorMessage">Error Connecting to Server</div>
     </div>
 
     <div class="hud">
@@ -151,7 +236,24 @@
 
     <div id="status" style="display: none;">Not connected</div>
 
+    <div class="disconnect-overlay" id="disconnectOverlay">
+        <div class="disconnect-message">You have been disconnected</div>
+        <button class="reconnect-button" id="reconnectButton">Reconnect</button>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script type="text/javascript" src="/assets/js/main.js?v=33"></script>
+    <script>
+        function showDisconnectOverlay(errorCode) {
+            const disconnectOverlay = document.getElementById('disconnectOverlay');
+            const disconnectMessage = document.querySelector('.disconnect-message');
+            disconnectMessage.textContent = `Disconnected from server. Error code: ${errorCode}`;
+            disconnectOverlay.classList.add('show');
+        }
+
+        document.getElementById('reconnectButton').addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
 </body>
 </html>
