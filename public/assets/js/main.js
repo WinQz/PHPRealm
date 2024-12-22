@@ -39,6 +39,11 @@ let previousMousePosition = {
 
 let cameraOffset = new THREE.Vector3(0, 2, 5);
 
+let isJumping = false;
+const jumpHeight = 1;
+const jumpSpeed = 0.1;
+let jumpDirection = 1;
+
 function updatePlayerPosition() {
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
@@ -55,13 +60,24 @@ function updatePlayerPosition() {
     if (moveLeft) player.position.add(right.clone().multiplyScalar(moveSpeed));
     if (moveRight) player.position.add(right.clone().multiplyScalar(-moveSpeed));
 
+    if (isJumping) {
+        player.position.y += jumpSpeed * jumpDirection;
+        if (player.position.y >= jumpHeight) {
+            jumpDirection = -1;
+        } else if (player.position.y <= 0) {
+            player.position.y = 0;
+            isJumping = false;
+            jumpDirection = 1;
+        }
+    }
+
     if (!originalPosition.equals(player.position)) {
         sendPositionUpdate();
     }
 }
 
 let lastPositionUpdate = 0;
-const UPDATE_INTERVAL = 50; // Reduce the interval to send updates more frequently
+const UPDATE_INTERVAL = 50;
 
 function sendPositionUpdate() {
     const now = Date.now();
@@ -72,7 +88,9 @@ function sendPositionUpdate() {
                 data: {
                     id: userId,
                     x: player.position.x,
-                    y: player.position.z
+                    y: player.position.z,
+                    z: player.position.y,
+                    isJumping: isJumping
                 }
             };
             ws.send(JSON.stringify(updateMessage));
@@ -116,6 +134,11 @@ document.addEventListener('keydown', (event) => {
         case 'd':
         case 'D':
             moveRight = true;
+            break;
+        case ' ':
+            if (!isJumping) {
+                isJumping = true;
+            }
             break;
     }
 });
@@ -190,8 +213,42 @@ const loadingContainer = document.getElementById('loadingContainer');
 const connectedMessage = document.getElementById('connectedMessage');
 const errorMessage = document.getElementById('errorMessage');
 
+const healthFill = document.getElementById('healthFill');
+const manaFill = document.getElementById('manaFill');
+const inventoryList = document.getElementById('inventoryList');
+const inventory = document.getElementById('inventory');
+const inventoryButton = document.getElementById('inventoryButton');
+
+inventoryButton.addEventListener('click', () => {
+    if (inventory.style.display === 'none') {
+        inventory.style.display = 'block';
+    } else {
+        inventory.style.display = 'none';
+    }
+});
+
+function updateHealth(health) {
+    healthFill.style.width = `${health}%`;
+}
+
+function updateMana(mana) {
+    manaFill.style.width = `${mana}%`;
+}
+
+function updateInventory(items) {
+    inventoryList.innerHTML = '';
+    items.forEach(item => {
+        const listItem = document.createElement('li');
+        listItem.textContent = item;
+        inventoryList.appendChild(listItem);
+    });
+}
+
+updateHealth(75);
+updateMana(50);
+updateInventory(['Sword', 'Shield', 'Potion']);
+
 ws.onopen = function() {
-    console.log('Connected to WebSocket server');
     statusElement.textContent = 'Connected to WebSocket server';
     handleConnection();
 
@@ -206,7 +263,6 @@ ws.onopen = function() {
 };
 
 ws.onclose = function() {
-    console.log('WebSocket connection closed. Attempting to reconnect...');
     displayError();
     setTimeout(() => {
         setupWebSocket();
@@ -214,19 +270,19 @@ ws.onclose = function() {
 };
 
 ws.onmessage = function(event) {
-    console.log('Received message:', event.data);
-
     try {
         const message = JSON.parse(event.data);
-        console.log('Parsed message:', message);
 
         if (message.type === 'updatePlayerPosition') {
             Object.entries(message.data).forEach(([playerId, data]) => {
                 if (playerId !== userId) {
                     if (!players[playerId]) {
-                        players[playerId] = createPlayer(data.x, data.y, 0xe74c3c);
+                        players[playerId] = createPlayer(data.x, data.z, 0xe74c3c);
                     } else {
-                        players[playerId].position.set(data.x, 0, data.y);
+                        players[playerId].position.set(data.x, data.z, data.y);
+                        if (data.isJumping) {
+                            players[playerId].position.y += jumpSpeed * jumpDirection;
+                        }
                     }
                 }
             });
@@ -243,6 +299,12 @@ ws.onmessage = function(event) {
                 players[newUserData.id] = createPlayer(x, y, color);
             }
             updateUsersList({ [newUserData.id]: newUserData });
+        } else if (message.type === 'updateHealth') {
+            updateHealth(message.data.health);
+        } else if (message.type === 'updateMana') {
+            updateMana(message.data.mana);
+        } else if (message.type === 'updateInventory') {
+            updateInventory(message.data.items);
         }
     } catch (e) {
         console.error('Failed to parse message:', e);
@@ -250,7 +312,6 @@ ws.onmessage = function(event) {
 };
 
 ws.onerror = function(error) {
-    console.log('WebSocket error:', error);
     statusElement.textContent = 'WebSocket error: ' + error.message;
     displayError();
 };
@@ -287,9 +348,7 @@ function fetchUserData() {
             if (data.error) {
                 console.error('Error fetching user data:', data.error);
             } else {
-                console.log('User data fetched:', data);
                 userId = data.id;
-                console.log(`Sending userId: ${userId}`);
             }
         })
         .catch(error => console.error('Fetch error:', error));
